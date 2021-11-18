@@ -4,6 +4,7 @@ import asyncio
 from plexauth import PlexAuth
 import webbrowser
 from plexapi.server import PlexServer
+from pprint import pprint
 
 PAYLOAD = {
     'X-Plex-Product': 'Test Product',
@@ -62,7 +63,8 @@ for session in plex.sessions():
 while True:
     time.sleep(15)
     for session in plex.sessions():
+        pprint(vars(session))
         print(session.title)
         print(session.parentTitle)
         print(session.grandparentTitle)
-        RPC.update(state="{} - {} - {}".format(session.grandparentTitle,session.parentTitle,session.title))
+        RPC.update(state="Watching Plex", details="{} - {} - {}".format(session.grandparentTitle,session.parentTitle,session.title))
