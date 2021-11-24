@@ -5,6 +5,7 @@ from plexauth import PlexAuth
 import webbrowser
 from plexapi.server import PlexServer
 from pprint import pprint
+import os
 
 PAYLOAD = {
     'X-Plex-Product': 'Test Product',
@@ -27,7 +28,7 @@ RPC.connect()
 global tokenRequested
 tokenRequested = False
 global token
-
+global plex
 async def main():
     async with PlexAuth(PAYLOAD) as plexauth:
         await plexauth.initiate_auth()
@@ -41,30 +42,51 @@ async def main():
     
     if token:
         print("Token: {}".format(token))
+        with open('token.txt','w') as f:
+            f.write(token)
     else:
         print("No token returned.")
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+if os.path.isfile('token.txt'):
+    with open('token.txt') as f:
+        token = f.read()
+    plex = PlexServer(token=token)  
+else:
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
 
-plex= PlexServer(token=token)
+
+
 
 print(plex.account().username)
 
-for client in plex.clients():
-    print(client.title)
 
 for session in plex.sessions():
-    print(session.title)
-    print(session.parentTitle)
-    print(session.grandparentTitle)
-
+    if session.type == 'movie':
+        print(session.title)
+    elif session.type == 'episode':
+        print(session.title)
+        print(session.parentTitle)
+        print(session.grandparentTitle)
+    pprint(vars(session.session[0]))
 
 while True:
     time.sleep(15)
     for session in plex.sessions():
         pprint(vars(session))
         print(session.title)
-        print(session.parentTitle)
-        print(session.grandparentTitle)
-        RPC.update(state="Watching Plex", details="{} - {} - {}".format(session.grandparentTitle,session.parentTitle,session.title))
+       
+        info1 = session.title
+        info2 = ""
+        info3 = ""
+        if hasattr(session,'grandparentTitle'):
+            info2 = session.grandparentTitle
+            info3 = session.parentTitle
+        print((int(session.duration) - int(session.viewOffset)))
+        print(int(time.time()))
+        end = int(time.time()) + ((int(session.duration) - int(session.viewOffset))/1000)
+        RPC.update(
+            state=" ▶ ",
+            end=end,
+            details="{}\n{}\n{}".format(info1,info2,info3)
+        )
